@@ -1,0 +1,53 @@
+:root {
+  /* 小清新绿植主题 - 更清新的绿色 */
+  --primary-color: #5CAE95;
+  --secondary-color: #8ECAAD;
+  --accent-color: #D9EFE2;
+  --background-color: #F8FBF9;
+  --text-color: #3A4A42;
+  --light-text-color: #6B8C7D;
+  --border-color: #D1E7DC;
+  --shadow-color: rgba(92, 174, 149, 0.12);
+  
+  /* 字体 */
+  --font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* 圆角 */
+  --border-radius-sm: 8px;
+  --border-radius-md: 16px;
+  --border-radius-lg: 24px;
+  
+  /* 动画 */
+  --transition-speed: 0.3s;
+}
+
+/* 复古主题 */
+.theme-vintage {
+  --primary-color: #B79B7E;
+  --secondary-color: #D4C1A9;
+  --accent-color: #F0E6D8;
+  --background-color: #F9F6F0;
+  --text-color: #5D4B3A;
+  --light-text-color: #8A7866;
+  --border-color: #E6D9C7;
+  --shadow-color: rgba(183, 155, 126, 0.15);
+}
+
+/* 赛博朋克主题 */
+.theme-cyberpunk {
+  --primary-color: #F637EC;
+  --secondary-color: #64CCC5;
+  --accent-color: #DAFFFB;
+  --background-color: #1A1A2E;
+  --text-color: #E6E6FA;
+  --light-text-color: #A5A5D3;
+  --border-color: #4B0082;
+  --shadow-color: rgba(246, 55, 236, 0.25);
+}

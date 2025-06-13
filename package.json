@@ -1,0 +1,25 @@
+{
+  "name": "idea_catcher_app_0613",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vueuse/core": "^10.1.2",
+    "axios": "^1.9.0",
+    "chart.js": "^4.3.0",
+    "d3": "^7.8.5",
+    "marked": "^5.1.0",
+    "pinia": "^2.1.4",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "vite": "^6.3.5"
+  }
+}
