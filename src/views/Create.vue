@@ -38,14 +38,11 @@
           </div>
         </div>
         
+        <!-- 灵感组合器 -->
+        <InspirationCombiner />
+        
         <!-- AI图像生成器 -->
         <AIImageGenerator />
-        
-        <!-- 其他创意工具可以在这里添加 -->
-        <div class="coming-soon">
-          <h3>更多创意工具即将推出</h3>
-          <p>我们正在开发更多AI驱动的创意工具，敬请期待！</p>
-        </div>
       </div>
     </div>
   </div>
@@ -54,21 +51,22 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AIImageGenerator from '../components/inspiration/AIImageGenerator.vue'
+import InspirationCombiner from '../components/inspiration/InspirationCombiner.vue'
 import { useInspirationStore } from '../store/inspirationStore'
 
 const inspirationStore = useInspirationStore()
 const currentInspiration = ref(null)
 
 onMounted(async () => {
+  // 确保灵感数据已加载
+  if (inspirationStore.inspirations.length === 0) {
+    await inspirationStore.fetchInspirations()
+  }
+  
   // 从本地存储获取当前灵感ID
   const currentId = localStorage.getItem('currentInspirationId')
   
   if (currentId) {
-    // 确保灵感数据已加载
-    if (inspirationStore.inspirations.length === 0) {
-      await inspirationStore.fetchInspirations()
-    }
-    
     // 查找当前灵感
     currentInspiration.value = inspirationStore.getInspirationById(currentId)
     
