@@ -98,22 +98,21 @@ const inspirationPool = [
     anonymous: false
   },
   {
-    id: 'b3',
-    title: '雨声',
-    content: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAuLi4uLi4uLi4uLi4uLi4uLi4uLi44ODg4ODg4ODg4ODg4ODg4ODg4ODg4OD///////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAYHl',
-    transcript: '雨滴落在窗户上的声音，让人感到宁静与放松。',
-    type: 'audio',
-    tags: ['声音', '雨天', '放松'],
-    author: '声音收集者',
-    anonymous: true
-  },
-  {
     id: 'b4',
     title: '关于创造力的思考',
     content: '创造力不是凭空而来，而是对已有事物的重新组合和解读。当我们打破常规思维，从不同角度看待问题时，灵感就会不期而至。',
     type: 'text',
     tags: ['创造力', '思考', '灵感'],
     author: '创意教练',
+    anonymous: false
+  },
+  {
+    id: 'b5',
+    title: '色彩的力量',
+    content: '色彩能够影响我们的情绪和感受。蓝色带来平静，红色激发热情，绿色让人感到新鲜与生机。在设计中巧妙运用色彩，可以传达特定的情感和信息。',
+    type: 'text',
+    tags: ['设计', '色彩', '情感'],
+    author: '色彩设计师',
     anonymous: false
   }
 ]
