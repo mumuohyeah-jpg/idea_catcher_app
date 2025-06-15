@@ -4,12 +4,20 @@
       <div class="page-header">
         <h1>收集灵感</h1>
         <p>捕捉你的创意火花，多种方式记录灵感</p>
-        <div class="progress-container">
+        <div class="progress-container desktop-only">
           <div class="progress-bar">
-            <div class="progress-step active">收集灵感</div>
-            <div class="progress-step">灵感工坊</div>
-            <div class="progress-step">灵感日历</div>
-            <div class="progress-step">灵感分享</div>
+            <div class="progress-step active" data-label="收集灵感">
+              <span class="step-number">1</span>
+            </div>
+            <div class="progress-step" data-label="工坊">
+              <span class="step-number">2</span>
+            </div>
+            <div class="progress-step" data-label="日历">
+              <span class="step-number">3</span>
+            </div>
+            <div class="progress-step" data-label="分享">
+              <span class="step-number">4</span>
+            </div>
           </div>
         </div>
       </div>
@@ -20,8 +28,8 @@
             <h3>快速操作</h3>
             <div class="quick-actions">
               <button class="action-btn primary-btn" @click="showNewInspirationForm">
-                <span class="material-icons">add</span>
-                <span>新建灵感</span>
+                <span class="material-icons">text_fields</span>
+                <span>文字灵感</span>
               </button>
               <button class="action-btn" @click="startVoiceRecording">
                 <span class="material-icons">mic</span>
@@ -34,7 +42,7 @@
             </div>
           </div>
           
-          <div class="sidebar-section">
+          <div class="sidebar-section mobile-hidden">
             <h3>标签筛选</h3>
             <div class="tags-filter">
               <div 
@@ -46,36 +54,6 @@
               >
                 {{ tag }}
               </div>
-            </div>
-          </div>
-          
-          <div class="sidebar-section">
-            <h3>类型筛选</h3>
-            <div class="type-filter">
-              <button 
-                class="type-btn"
-                :class="{ active: selectedTypes.includes('text') }"
-                @click="toggleType('text')"
-              >
-                <span class="material-icons">text_fields</span>
-                <span>文字</span>
-              </button>
-              <button 
-                class="type-btn"
-                :class="{ active: selectedTypes.includes('image') }"
-                @click="toggleType('image')"
-              >
-                <span class="material-icons">image</span>
-                <span>图片</span>
-              </button>
-              <button 
-                class="type-btn"
-                :class="{ active: selectedTypes.includes('audio') }"
-                @click="toggleType('audio')"
-              >
-                <span class="material-icons">mic</span>
-                <span>语音</span>
-              </button>
             </div>
           </div>
         </div>
@@ -213,6 +191,12 @@ const filteredInspirations = computed(() => {
   return result
 })
 
+// 监听屏幕宽度变化
+const isMobile = ref(window.innerWidth <= 768)
+window.addEventListener('resize', () => {
+  isMobile.value = window.innerWidth <= 768
+})
+
 onMounted(async () => {
   await inspirationStore.fetchInspirations()
   loading.value = false
@@ -231,14 +215,25 @@ onMounted(async () => {
 })
 
 function showNewInspirationForm() {
-  editingInspiration.value = null
+  editingInspiration.value = {
+    title: '',
+    type: 'text',
+    content: '',
+    tags: []
+  }
   showForm.value = true
   hideGuide()
+  
+  // 自动选择文字类型
+  selectedTypes.value = ['text']
 }
 
 function editInspiration(inspiration) {
   editingInspiration.value = inspiration
   showForm.value = true
+  
+  // 自动选择对应类型
+  selectedTypes.value = [inspiration.type]
 }
 
 function hideForm() {
@@ -327,6 +322,9 @@ async function startVoiceRecording() {
     showForm.value = true
     hideGuide()
     
+    // 自动选择语音类型
+    selectedTypes.value = ['audio']
+    
     // 短暂延迟后自动开始录音
     setTimeout(() => {
       const recordBtn = document.querySelector('.record-btn')
@@ -347,6 +345,9 @@ async function startVoiceRecording() {
     
     showForm.value = true
     hideGuide()
+    
+    // 自动选择语音类型
+    selectedTypes.value = ['audio']
   }
 }
 
@@ -364,6 +365,9 @@ function openCamera() {
   }
   showForm.value = true
   hideGuide()
+  
+  // 自动选择图片类型
+  selectedTypes.value = ['image']
   
   // 短暂延迟后自动触发文件选择
   setTimeout(() => {
@@ -391,13 +395,18 @@ function hideGuide() {
 .collect-page {
   padding-bottom: var(--spacing-xl);
   position: relative;
-  background-color: #f8f9fa;
+  background-color: var(--background-color);
+  min-height: 100vh;
 }
 
 .page-header {
   margin-bottom: var(--spacing-lg);
   text-align: center;
   padding: var(--spacing-lg) 0;
+}
+
+.desktop-only {
+  display: block;
 }
 
 .page-header h1 {
@@ -417,6 +426,8 @@ function hideGuide() {
   max-width: 600px;
   margin: 0 auto;
   margin-top: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
 }
 
 .progress-bar {
@@ -425,6 +436,7 @@ function hideGuide() {
   position: relative;
   margin-bottom: var(--spacing-lg);
   padding: 0 20px;
+  width: 100%;
 }
 
 .progress-bar::before {
@@ -439,6 +451,19 @@ function hideGuide() {
   z-index: 1;
 }
 
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 15%;
+  height: 2px;
+  background-color: var(--primary-color);
+  transform: translateY(-50%);
+  z-index: 1;
+  transition: width 0.5s ease;
+}
+
 .progress-step {
   position: relative;
   background-color: white;
@@ -450,11 +475,31 @@ function hideGuide() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0;
   margin: 0 10px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: all var(--transition-speed);
+}
+
+.step-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--light-text-color);
+}
+
+.progress-step.active {
+  transform: scale(1.1);
+  border-color: var(--primary-color);
+  border-width: 2.5px;
+  background-color: var(--primary-color);
+}
+
+.progress-step.active .step-number {
+  color: white;
 }
 
 .progress-step::after {
+  content: attr(data-label);
   position: absolute;
   top: 100%;
   left: 50%;
@@ -464,32 +509,19 @@ function hideGuide() {
   font-size: 0.9rem;
   color: var(--light-text-color);
   font-weight: normal;
+  text-align: center;
+  width: max-content;
 }
 
-.progress-step:nth-child(1)::after {
-  content: "收集灵感";
+@media (max-width: 480px) {
+  .progress-step::after {
+    display: none;
+  }
 }
 
-.progress-step:nth-child(2)::after {
-  content: "灵感工坊";
-}
-
-.progress-step:nth-child(3)::after {
-  content: "灵感日历";
-}
-
-.progress-step:nth-child(4)::after {
-  content: "灵感分享";
-}
-
-.progress-step.active {
+.progress-step.completed {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
-}
-
-.progress-step.active::after {
-  color: var(--primary-color);
-  font-weight: 500;
 }
 
 .progress-step.completed {
@@ -517,12 +549,18 @@ function hideGuide() {
 .sidebar-section {
   background-color: white;
   border-radius: var(--border-radius-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px var(--shadow-color);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
   position: relative;
   overflow: hidden;
   border-left: 4px solid var(--primary-color);
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.sidebar-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--shadow-color);
 }
 
 .sidebar-section h3 {
@@ -541,23 +579,42 @@ function hideGuide() {
 .action-btn {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-sm);
   border: none;
   border-radius: var(--border-radius-md);
   background-color: #f5f5f5;
   cursor: pointer;
   transition: all var(--transition-speed);
-  text-align: left;
+  text-align: center;
   position: relative;
   overflow: hidden;
   z-index: 1;
   font-weight: 500;
 }
 
+.action-btn .material-icons {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
 .action-btn.primary-btn {
   background-color: rgba(92, 174, 149, 0.1);
   color: var(--primary-color);
+}
+
+@media (min-width: 769px) {
+  .action-btn {
+    flex-direction: row;
+    text-align: left;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .action-btn .material-icons {
+    margin-bottom: 0;
+  }
 }
 
 .action-btn::before {
@@ -665,15 +722,17 @@ function hideGuide() {
 
 .empty-state {
   text-align: center;
-  padding: var(--spacing-xl) 0;
+  padding: var(--spacing-xl) var(--spacing-md);
   background-color: white;
   border-radius: var(--border-radius-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px var(--shadow-color);
   min-height: 300px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin: 0 auto;
+  max-width: 100%;
 }
 
 .empty-icon {
@@ -706,8 +765,9 @@ function hideGuide() {
 
 .inspirations-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-md);
+  width: 100%;
 }
 
 .floating-guide {
@@ -717,12 +777,14 @@ function hideGuide() {
   transform: translateX(-50%);
   background-color: white;
   border-radius: var(--border-radius-lg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px var(--shadow-color);
   padding: var(--spacing-lg);
   z-index: 100;
   max-width: 90%;
   width: 400px;
   animation: slideUp 0.5s ease;
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
 }
 
 @keyframes slideUp {
@@ -814,11 +876,14 @@ function hideGuide() {
   .quick-actions {
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: center;
   }
   
   .action-btn {
     flex: 1;
-    min-width: 120px;
+    min-width: 100px;
+    max-width: 30%;
+    margin: 0 5px;
   }
   
   .inspirations-list {
@@ -827,6 +892,53 @@ function hideGuide() {
   
   .floating-guide {
     width: 90%;
+  }
+  
+  .page-header h1 {
+    font-size: 1.8rem;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .page-header p {
+    font-size: 1rem;
+    padding: 0 var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .desktop-only {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-section {
+    padding: var(--spacing-sm);
+  }
+  
+  .action-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.9rem;
+  }
+  
+  .filter-tag {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .page-header {
+    padding: var(--spacing-md) 0;
+  }
+  
+  .page-header h1 {
+    font-size: 1.6rem;
+  }
+  
+  .page-header p {
+    font-size: 0.95rem;
   }
 }
 </style>
