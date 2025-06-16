@@ -31,12 +31,28 @@
       <button class="control-btn" @click="prevTrack">
         <span class="material-icons">skip_previous</span>
       </button>
-      <button class="control-btn play-btn" @click="togglePlay">
-        <span class="material-icons">{{ isPlaying ? 'pause' : 'play_arrow' }}</span>
+      <button class="control-btn play-btn" @click="togglePlay" :disabled="isLoading">
+        <span v-if="isLoading" class="spinner"></span>
+        <span v-else class="material-icons">{{ isPlaying ? 'pause' : 'play_arrow' }}</span>
       </button>
       <button class="control-btn" @click="nextTrack">
         <span class="material-icons">skip_next</span>
       </button>
+    </div>
+    
+    <div class="volume-control">
+      <span class="material-icons volume-icon" @click="toggleMute">
+        {{ volume > 0 ? (volume > 0.5 ? 'volume_up' : 'volume_down') : 'volume_off' }}
+      </span>
+      <input 
+        type="range" 
+        min="0" 
+        max="1" 
+        step="0.01" 
+        v-model="volume" 
+        @input="updateVolume"
+        class="volume-slider"
+      >
     </div>
     
     <div class="playlist">
@@ -79,28 +95,35 @@ const audioPlayer = ref(null)
 const isPlaying = ref(false)
 const currentTrackIndex = ref(0)
 const currentTime = ref(0)
+const isLoading = ref(false)
+const volume = ref(0.7)
+const retryCount = ref(0)
+const maxRetries = 3
 
-// 播放列表 - 使用白噪音替代原有音乐，减少到3种
+// 播放列表 - 使用更可靠的白噪音音频源
 const playlist = [
   {
-    title: '白噪音',
-    artist: 'White Noise',
+    title: '专注白噪音',
+    artist: 'Focus Sounds',
     cover: 'https://cdn.pixabay.com/photo/2017/11/04/08/14/tree-2916763_1280.jpg',
-    url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_1b2ffad42d.mp3',
+    url: 'https://assets.mixkit.co/sfx/preview/mixkit-forest-stream-ambience-loop-542.mp3',
+    backupUrl: 'https://cdn.freesound.org/previews/573/573577_5674468-lq.mp3',
     duration: 240
   },
   {
     title: '雨声白噪音',
     artist: 'Rain Sounds',
     cover: 'https://cdn.pixabay.com/photo/2018/01/14/23/12/nature-3082832_1280.jpg',
-    url: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_270f49b9bf.mp3',
+    url: 'https://assets.mixkit.co/sfx/preview/mixkit-light-rain-loop-2393.mp3',
+    backupUrl: 'https://cdn.freesound.org/previews/346/346562_5121236-lq.mp3',
     duration: 201
   },
   {
     title: '自然白噪音',
     artist: 'Nature Ambience',
     cover: 'https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072823_1280.jpg',
-    url: 'https://cdn.pixabay.com/download/audio/2021/11/25/audio_00f9eb1a48.mp3',
+    url: 'https://assets.mixkit.co/sfx/preview/mixkit-calm-forest-ambience-loop-522.mp3',
+    backupUrl: 'https://cdn.freesound.org/previews/459/459658_4766646-lq.mp3',
     duration: 180
   }
 ]
@@ -121,16 +144,73 @@ function togglePlay() {
     audioPlayer.value.pause()
     isPlaying.value = false
   } else {
+    // 重置重试计数
+    retryCount.value = 0
+    // 显示加载状态
+    isLoading.value = true
+    
     // 先加载音频
     audioPlayer.value.load()
     // 然后尝试播放
-    audioPlayer.value.play().catch(error => {
+    playAudio()
+  }
+}
+
+function playAudio() {
+  if (!audioPlayer.value) return;
+  
+  const playPromise = audioPlayer.value.play()
+  
+  if (playPromise !== undefined) {
+    playPromise.then(() => {
+      // 播放成功
+      isPlaying.value = true
+      isLoading.value = false
+      retryCount.value = 0 // 重置重试计数
+    }).catch(error => {
       console.error('播放失败:', error)
-      isPlaying.value = false
-      // 不显示弹窗，避免用户体验不佳
-      console.log('音频播放失败，请稍后再试')
+      
+      // 如果是自动播放限制，显示提示
+      if (error.name === 'NotAllowedError') {
+        console.log('浏览器阻止了自动播放，请点击播放按钮手动播放')
+        isLoading.value = false
+        return
+      }
+      
+      // 尝试使用备用URL
+      if (retryCount.value === 0 && currentTrack.value.backupUrl) {
+        console.log('尝试使用备用音频源')
+        // 临时切换到备用URL
+        const originalUrl = audioPlayer.value.src
+        audioPlayer.value.src = currentTrack.value.backupUrl
+        audioPlayer.value.load()
+        retryCount.value++
+        
+        // 重试播放
+        setTimeout(() => {
+          playAudio()
+        }, 1000)
+      } else if (retryCount.value < maxRetries) {
+        // 继续重试
+        console.log(`重试播放 (${retryCount.value + 1}/${maxRetries})`)
+        retryCount.value++
+        
+        // 延迟重试
+        setTimeout(() => {
+          audioPlayer.value.load()
+          playAudio()
+        }, 1000 * retryCount.value) // 逐渐增加重试间隔
+      } else {
+        // 重试次数用尽
+        console.log('音频播放失败，请稍后再试')
+        isPlaying.value = false
+        isLoading.value = false
+      }
     })
+  } else {
+    // 对于不支持Promise的旧浏览器
     isPlaying.value = true
+    isLoading.value = false
   }
 }
 
@@ -155,16 +235,18 @@ function selectTrack(index) {
 
 function resetAndPlay() {
   currentTime.value = 0
-  if (isPlaying.value && audioPlayer.value) {
+  retryCount.value = 0
+  
+  if (audioPlayer.value) {
+    isLoading.value = true
+    
     // 需要在下一个事件循环中播放，确保src已更新
     setTimeout(() => {
       if (audioPlayer.value) {
-        audioPlayer.value.play().catch(error => {
-          console.error('播放失败:', error)
-          isPlaying.value = false
-        })
+        audioPlayer.value.load() // 确保重新加载音频
+        playAudio()
       }
-    }, 0)
+    }, 50) // 增加延迟，确保音频加载
   }
 }
 
@@ -191,25 +273,57 @@ watch(currentTrackIndex, () => {
   }
 })
 
+// 音量控制函数
+function updateVolume() {
+  if (audioPlayer.value) {
+    audioPlayer.value.volume = volume.value
+  }
+}
+
+function toggleMute() {
+  if (volume.value > 0) {
+    // 存储当前音量以便恢复
+    audioPlayer.value._previousVolume = volume.value
+    volume.value = 0
+  } else {
+    // 恢复之前的音量或默认值
+    volume.value = audioPlayer.value._previousVolume || 0.7
+  }
+  updateVolume()
+}
+
 onMounted(() => {
   // 初始化音频播放器
   setTimeout(() => {
     if (audioPlayer.value) {
-      audioPlayer.value.volume = 0.7
+      audioPlayer.value.volume = volume.value
       audioPlayer.value.preload = 'auto'
+      audioPlayer.value.crossOrigin = 'anonymous' // 添加跨域支持
       
       // 添加音频加载事件监听
-      audioPlayer.value.addEventListener('loadeddata', () => {
+      const handleLoaded = () => {
         console.log('音频已加载')
-      })
+        isLoading.value = false
+      }
+      audioPlayer.value.addEventListener('loadeddata', handleLoaded)
+      
+      // 添加音频加载中事件
+      const handleLoading = () => {
+        isLoading.value = true
+      }
+      audioPlayer.value.addEventListener('loadstart', handleLoading)
       
       // 添加音频错误事件监听
-      audioPlayer.value.addEventListener('error', (e) => {
+      const handleError = (e) => {
         console.error('音频加载错误:', e)
-        // 不显示弹窗，避免用户体验不佳
-        console.log('音频加载失败，请检查网络连接')
-        isPlaying.value = false
-      })
+        isLoading.value = false
+      }
+      audioPlayer.value.addEventListener('error', handleError)
+      
+      // 存储事件处理函数引用，以便在组件卸载时正确移除
+      audioPlayer.value._loadedHandler = handleLoaded
+      audioPlayer.value._loadingHandler = handleLoading
+      audioPlayer.value._errorHandler = handleError
       
       // 预加载第一首歌
       audioPlayer.value.load()
@@ -221,8 +335,22 @@ onUnmounted(() => {
   // 清理
   if (audioPlayer.value) {
     audioPlayer.value.pause()
-    audioPlayer.value.removeEventListener('loadeddata', () => {})
-    audioPlayer.value.removeEventListener('error', () => {})
+    
+    // 正确移除事件监听器
+    if (audioPlayer.value._loadedHandler) {
+      audioPlayer.value.removeEventListener('loadeddata', audioPlayer.value._loadedHandler)
+    }
+    
+    if (audioPlayer.value._loadingHandler) {
+      audioPlayer.value.removeEventListener('loadstart', audioPlayer.value._loadingHandler)
+    }
+    
+    if (audioPlayer.value._errorHandler) {
+      audioPlayer.value.removeEventListener('error', audioPlayer.value._errorHandler)
+    }
+    
+    // 释放资源
+    audioPlayer.value.src = ''
   }
 })
 </script>
@@ -364,6 +492,63 @@ onUnmounted(() => {
   height: 48px;
   background-color: var(--primary-color);
   color: white;
+  position: relative;
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: 0 var(--spacing-md);
+}
+
+.volume-icon {
+  cursor: pointer;
+  color: var(--primary-color);
+}
+
+.volume-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border-color);
+  border-radius: 2px;
+  outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: none;
 }
 
 .playlist h4 {
